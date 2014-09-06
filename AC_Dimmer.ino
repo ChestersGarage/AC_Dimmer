@@ -7,20 +7,20 @@
   *******  CAUTION: Do not use on flourescent lights or inductive loads!  ********
   *******  Verify your device can handle dimming before using.  ********
   
-  Fire triacs a certain time after detecting the zero cross time
+  Fire triacs a certain time after detecting the zero-crossing time
   of the mains AC line voltage.
   
 */
 
 // Set these for your installation
-const int lineFrequency = 60;             // The frequency of the mains power in Hz (Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz)
+const int lineFrequency = 60;             // The frequency of the mains line voltage in Hz (Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz)
 const byte dimmerKnobPin[4] = {0,1,2,3};  // Which Analog pins are used for the dimmer knob inputs
 const byte triacPin[4] = {4,5,6,7};       // Which digital IO pins are used for the triac gate
-const byte zeroCrossInt = 0;              // Which interrupt is used for the zero cross input (int 0 = pin D2, int 1 = D3)
+const byte zeroCrossInt = 0;              // Which interrupt is used for the zero-cross input (int 0 = pin D2, int 1 = D3)
 
-// Mains Line Zero Cross
-volatile boolean zeroCross = false;                      // Have we detected a zero cross?
-unsigned long int zeroCrossTime = 0;                     // Timestamp in micros() of the latest zero crossing interrupt
+// Mains line voltage zero-cross
+volatile boolean zeroCross = false;                      // Have we detected a zero-cross?
+unsigned long int zeroCrossTime = 0;                     // Timestamp in micros() of the latest zero-crossing interrupt
 float linePeriod = (1.0/float(lineFrequency))*1000000.0; // The period (or wavelength) in microseconds.
 
 // Dimmer knob inputs
@@ -40,14 +40,14 @@ void setup() {                                              // Begin setup
 }
 
 // ISR to run when the zero-cross interrupt trips
-void zeroCrossDetect() {  // function to be fired at the zero crossing
-  zeroCross = true;       // All we do is set a variable that's picked up later in the code
+void zeroCrossDetect() {  // function to be fired at the zero-crossing
+  zeroCross = true;       // All we do is set a flag that's picked up later in the code
 }
 
 // Main Loop
 void loop() {
   // Read dimmer knobs
-  if  ( dimmerKnobReadTime >= millis()-dimmerKnobReadInterval ) {  // If it's time to read the dimmer knobs
+  if  ( millis() >= dimmerKnobReadTime+dimmerKnobReadInterval ) {  // If it's time to read the dimmer knobs
     dimmerKnobReadTime = millis()+dimmerKnobReadInterval;          // Set the next dimmer knob read time
     dimmerKnob[0] = analogRead(dimmerKnobPin[0]);                  // Read the dimmer knobs
     dimmerKnob[1] = analogRead(dimmerKnobPin[1]);
@@ -55,7 +55,7 @@ void loop() {
     dimmerKnob[3] = analogRead(dimmerKnobPin[3]);
   }
   
-  // Act on a zero cross detection
+  // Act on a zero-cross detection
   if ( zeroCross ) {                                                                    // Have we detected a zero cross?
     zeroCrossTime = micros();                                                           // Set the zero cross time in micros()
     zeroCross = false;                                                                  // Reset the flag
@@ -68,7 +68,7 @@ void loop() {
   // Fire each of the triacs at the right time
   if ( micros() >= triacNextFireTime[0] ) {                  // Is it time to fire the triacs?
     digitalWrite(triacPin[0], HIGH);                         // Fire the Triac to turn on flow of electricity
-    triacNextFireTime[1] = triacNextFireTime[0]+linePeriod;  // Push the next fire time out into the distant future
+    triacNextFireTime[0] = triacNextFireTime[0]+linePeriod;  // Push the next fire time out into the distant future
   }
   if ( micros() >= triacNextFireTime[1] ) {
     digitalWrite(triacPin[1], HIGH);
@@ -76,15 +76,15 @@ void loop() {
   }
   if ( micros() >= triacNextFireTime[2] ) {
     digitalWrite(triacPin[2], HIGH);
-    triacNextFireTime[1] = triacNextFireTime[2]+linePeriod;
+    triacNextFireTime[2] = triacNextFireTime[2]+linePeriod;
   }
   if ( micros() >= triacNextFireTime[3] ) {
     digitalWrite(triacPin[3], HIGH);
-    triacNextFireTime[1] = triacNextFireTime[3]+linePeriod;
+    triacNextFireTime[3] = triacNextFireTime[3]+linePeriod;
   }
   
   // Let go of the triac gates
-  digitalWrite(triacPin[0], LOW);  // Turn off the Triac gate (Triac will not actually turn off until ~next zero cross)
+  digitalWrite(triacPin[0], LOW);  // Turn off the Triac gate (Triac will not actually turn off until ~next zero-cross)
   digitalWrite(triacPin[1], LOW);
   digitalWrite(triacPin[2], LOW);
   digitalWrite(triacPin[3], LOW);
