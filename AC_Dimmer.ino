@@ -16,7 +16,7 @@
 const int lineFrequency = 60;             // The frequency of the mains power in Hz (Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz)
 const byte dimmerKnobPin[4] = {0,1,2,3};  // Which Analog pins are used for the dimmer knob inputs
 const byte triacPin[4] = {4,5,6,7};       // Which digital IO pins are used for the triac gate
-const byte zeroCrossInt = 0;           // Which interrupt is used for the zero cross input (int 0 = pin D2, int 1 = D3)
+const byte zeroCrossInt = 0;              // Which interrupt is used for the zero cross input (int 0 = pin D2, int 1 = D3)
 
 // Mains Line Zero Cross
 volatile boolean zeroCross = false;                      // Have we detected a zero cross?
@@ -38,7 +38,8 @@ void setup() {                                              // Begin setup
   pinMode(triacPin[2], OUTPUT);
   pinMode(triacPin[3], OUTPUT);
 }
-  
+
+// ISR to run when the zero-cross interrupt trips
 void zeroCrossDetect() {  // function to be fired at the zero crossing
   zeroCross = true;       // All we do is set a variable that's picked up later in the code
 }
@@ -64,7 +65,7 @@ void loop() {
     triacNextFireTime[3] = zeroCrossTime + map(dimmerKnob[3],0,1023,0,int(linePeriod));
   }
 
-  // Fire the triacs at the right time each
+  // Fire each of the triacs at the right time
   if ( micros() >= triacNextFireTime[0] ) {                  // Is it time to fire the triacs?
     digitalWrite(triacPin[0], HIGH);                         // Fire the Triac to turn on flow of electricity
     triacNextFireTime[1] = triacNextFireTime[0]+linePeriod;  // Push the next fire time out into the distant future
