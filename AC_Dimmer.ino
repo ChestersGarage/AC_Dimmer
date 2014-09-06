@@ -12,11 +12,20 @@
   
 */
 
+// Test mode sets up a PWM signal at 127 on the test pin.
+// Run a jumper from this pin to the zero-cross interrupt pin.
+// Then watch the magic on your oscilloscope.
+// Comment out this line to disable test mode.
+#define TEST_MODE
+
 // Set these for your installation
 const int lineFrequency = 60;             // The frequency of the mains line voltage in Hz (Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz)
 const byte dimmerKnobPin[4] = {0,1,2,3};  // Which Analog pins are used for the dimmer knob inputs
 const byte triacPin[4] = {4,5,6,7};       // Which digital IO pins are used for the triac gate
 const byte zeroCrossInt = 0;              // Which interrupt is used for the zero-cross input (int 0 = pin D2, int 1 = D3)
+#ifdef TEST_MODE
+const byte testPin = 3;
+#endif
 
 // Mains line voltage zero-cross
 volatile boolean zeroCross = false;                      // Have we detected a zero-cross?
@@ -31,12 +40,16 @@ const int dimmerKnobReadInterval = 100;  // How often to read the dimmer knob in
 // Triac gate outputs
 unsigned long int triacNextFireTime[4];  // Timestamp in micros() when it's OK to fire the triacs again.
 
-void setup() {                                              // Begin setup
+// Initialize things
+void setup() {
   attachInterrupt(zeroCrossInt, zeroCrossDetect, FALLING);  // Attach an Interupt to Pin 2 (interupt 0) for Zero Cross Detection
   pinMode(triacPin[0], OUTPUT);                             // Set the Triac pin as output
   pinMode(triacPin[1], OUTPUT);
   pinMode(triacPin[2], OUTPUT);
   pinMode(triacPin[3], OUTPUT);
+#ifdef TEST_MODE
+  analogWrite(3,127);
+#endif
 }
 
 // ISR to run when the zero-cross interrupt trips
