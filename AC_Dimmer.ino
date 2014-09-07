@@ -45,7 +45,7 @@ unsigned long dimmerKnobReadTime = 0;            // When it's time to read the d
 const byte triacPin[4] = {4,7,8,12};  // Digital IO pins used for the triac gates
 unsigned long triacNextFireTime[4];   // Timestamp in micros() when it's OK to fire the triacs again.
 boolean triacFired[4] = {0,0,0,0};    // Triac has been fired since the last zero-cross
-int triacPulseDuration = 20;          // How long the triac pulse should last in micros()
+int triacPulseDuration = 100;          // How long the triac pulse should last in micros()
 
 // Initialize things
 void setup() {
