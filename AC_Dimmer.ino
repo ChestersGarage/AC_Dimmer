@@ -3,16 +3,20 @@
   Mark Chester <mark@chestersgarage.com>
   
   Dims household lights and other resistive loads.
-  
-  *******  CAUTION: Do not use on flourescent lights or inductive loads!  ********
-  *******  Verify your device can handle dimming before using.  ********
-  
-  Fire triacs a certain time after detecting the zero-crossing time
+  Triggers triacs a certain time after detecting the zero-crossing time
   of the mains AC line voltage.
   
+  This sketch requires a separate circuit board that consists of
+  triacs, opto-isolators and a zero-crossing detector at the very least.
+  
+  DO NOT use on flourescent lights or inductive loads.
+  Verify your device can handle dimming before using.
+  
+  BE CAREFUL!  Mains voltage CAN KILL YOU if anything goes wrong.
+  Care and safe physical design are paramount to a successful installation.
 */
 
-// Zero-cross
+// Zero-cross detector
 const byte zeroCrossInt = 0;         // Which interrupt is used for the zero-cross input (int 0 = pin D2, int 1 = D3)
 const int lineFrequency = 60;        // The frequency of the mains line voltage in Hz (Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz)
 volatile boolean zeroCross = false;  // Have we detected a zero-cross?
@@ -21,7 +25,7 @@ const int delayPeriod = 200;         // On the ATMega 328p/16MHz, the soonest we
 float linePeriod = (1.0/float(lineFrequency))*1000000.0-delayPeriod; // The line voltage period in microseconds (adjusted for delay).
 
 // Dimmer knobs
-const int dimmerKnobPin[4] = {0,1,2,3};     // Analog pins used for the dimmer knob inputs
+const byte dimmerKnobPin[4] = {0,1,2,3};     // Analog pins used for the dimmer knob inputs
 const long dimmerKnobReadInterval = 10000;   // How often to read the dimmer knob inputs in micros()
 int dimmerKnob[4];                           // The dimmer input value array
 unsigned long dimmerKnobReadTime;            // When it's time to read the dimmer knob inputs in micros()
@@ -56,8 +60,8 @@ void zeroCrossDetect() {  // function to be fired at the zero-crossing
   zeroCross = true;       // All we do is set a flag that's picked up later in the code
 }
 
+// Read dimmer knobs
 void readDimmerKnobs(){
-  // Read dimmer knobs
   if  ( micros() >= dimmerKnobReadTime+dimmerKnobReadInterval ) {  // If it's time to read the dimmer knobs
     dimmerKnobReadTime = micros()+dimmerKnobReadInterval;          // Set the next dimmer knob read time
     dimmerKnob[0] = analogRead(dimmerKnobPin[0]);                  // Read the dimmer knobs
@@ -67,8 +71,8 @@ void readDimmerKnobs(){
   }
 }
 
+// Act on a zero-cross detection
 void checkZeroCross() {
-  // Act on a zero-cross detection
   if ( zeroCross ) {                                                                    // Have we detected a zero cross?
     zeroCrossTime = micros();                                                           // Set the zero cross time in micros()
     zeroCross = false;                                                                  // Reset the flag
@@ -79,8 +83,8 @@ void checkZeroCross() {
   }
 }
 
+// Fire each of the triacs at the right time
 void fireTriacs() {
-  // Fire each of the triacs at the right time
   if ( micros() >= triacNextFireTime[0] ) {  // Is it time to fire the triacs?
     digitalWrite(triacPin[0], HIGH);         // Fire the Triac to turn on flow of electricity
   }
@@ -93,7 +97,6 @@ void fireTriacs() {
   if ( micros() >= triacNextFireTime[3] ) {
     digitalWrite(triacPin[3], HIGH);
   }
-  // Let go of the triac gates
   digitalWrite(triacPin[0], LOW);                           // Turn off the triac gate (Triac will not actually turn off until ~next zero-cross)
   digitalWrite(triacPin[1], LOW);
   digitalWrite(triacPin[2], LOW);
