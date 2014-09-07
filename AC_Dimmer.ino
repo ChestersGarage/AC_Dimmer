@@ -25,7 +25,7 @@ const int testPin = 11;
 // Zero-cross detector
 const byte zeroCrossInt = 0;         // Interrupt used for the zero-cross input (int 0 = pin D2, int 1 = D3)
 #ifdef TESTMODE
-const int lineFrequency = 30;       // The frequency of the mains line voltage in Hz
+const int lineFrequency = 122;       // The frequency of the mains line voltage in Hz
 #else
 const int lineFrequency = 60;        // The frequency of the mains line voltage in Hz
 #endif
@@ -37,19 +37,20 @@ float linePeriod = (1.0/float(lineFrequency))*1000000.0-delayPeriod; // The line
 
 // Dimmer knobs
 const byte dimmerKnobPin[4] = {0,1,2,3};     // Analog pins used for the dimmer knob inputs
-const long dimmerKnobReadInterval = 10000;   // How often to read the dimmer knob inputs in micros()
+const long dimmerKnobReadInterval = 100000;   // How often to read the dimmer knob inputs in micros()
 int dimmerKnob[4];                           // The dimmer input value array
-unsigned long dimmerKnobReadTime;            // When it's time to read the dimmer knob inputs in micros()
+unsigned long dimmerKnobReadTime = 0;            // When it's time to read the dimmer knob inputs in micros()
 
 // Triacs
 const byte triacPin[4] = {4,7,8,12};  // Digital IO pins used for the triac gates
 unsigned long triacNextFireTime[4];   // Timestamp in micros() when it's OK to fire the triacs again.
 boolean triacFired[4] = {0,0,0,0};    // Triac has been fired since the last zero-cross
+int triacPulseDuration = 20;          // How long the triac pulse should last in micros()
 
 // Initialize things
 void setup() {
 #ifdef TESTMODE
-  TCCR2B = TCCR2B & 0b11111000 | 0x07;  // Sets a 122Hz PWM on pins 3 and 11
+  TCCR2B = TCCR2B & 0b11111000 | 0x06;  // Sets a 122Hz PWM on pins 3 and 11
 #endif
   // Attach the zero-cross interrupt (verify which 'mode' parameter works best with the zero-cross detector you use)
   attachInterrupt(zeroCrossInt, zeroCrossDetect, FALLING);
@@ -98,6 +99,10 @@ void checkZeroCross() {
     triacNextFireTime[1] = zeroCrossTime + map(dimmerKnob[1],0,1023,delayPeriod,long(linePeriod));
     triacNextFireTime[2] = zeroCrossTime + map(dimmerKnob[2],0,1023,delayPeriod,long(linePeriod));
     triacNextFireTime[3] = zeroCrossTime + map(dimmerKnob[3],0,1023,delayPeriod,long(linePeriod));
+    triacFired[0] = false;
+    triacFired[1] = false;
+    triacFired[2] = false;
+    triacFired[3] = false;
   }
 }
 
@@ -105,35 +110,35 @@ void checkZeroCross() {
 // When two or more dimmer knobs are near the same value,
 // they will contend for timing and may be jumpy.
 void fireTriacs() {
-  if ( !triacFired[0] && micros() >= triacNextFireTime[0] ) {  // Is it time to fire the triacs?
+  if ( triacFired[0] == false && micros() >= triacNextFireTime[0] ) {  // Is it time to fire the triacs?
     digitalWrite(triacPin[0], HIGH);         // Fire the Triac to turn on flow of electricity
     triacFired[0] = true;
   }
-  if ( !triacFired[1] && micros() >= triacNextFireTime[1] ) {
+  if ( triacFired[1] == false && micros() >= triacNextFireTime[1] ) {
     digitalWrite(triacPin[1], HIGH);
     triacFired[1] = true;
   }
-  if ( !triacFired[2] && micros() >= triacNextFireTime[2] ) {
+  if ( triacFired[2] == false && micros() >= triacNextFireTime[2] ) {
     digitalWrite(triacPin[2], HIGH);
     triacFired[2] = true;
   }
-  if ( !triacFired[3] && micros() >= triacNextFireTime[3] ) {
+  if ( triacFired[3] == false && micros() >= triacNextFireTime[3] ) {
     digitalWrite(triacPin[3], HIGH);
     triacFired[3] = true;
   }
-  if ( triacFired[0] ) {
+  if ( triacFired[0] == true && micros() >= triacNextFireTime[0]+triacPulseDuration ) {
     digitalWrite(triacPin[0], LOW);  // Turn off the triac gate (Triac will not actually turn off until ~next zero-cross)
     triacNextFireTime[0] = triacNextFireTime[0]+linePeriod;
   }
-  if ( triacFired[1] ) {
+  if ( triacFired[1] == true && micros() >= triacNextFireTime[1]+triacPulseDuration ) {
     digitalWrite(triacPin[1], LOW);
     triacNextFireTime[1] = triacNextFireTime[1]+linePeriod;
   }
-  if ( triacFired[2] ) {
+  if ( triacFired[2] == true && micros() >= triacNextFireTime[2]+triacPulseDuration ) {
     digitalWrite(triacPin[2], LOW);
     triacNextFireTime[2] = triacNextFireTime[2]+linePeriod;
   }
-  if ( triacFired[3] ) {
+  if ( triacFired[3] == true && micros() >= triacNextFireTime[3]+triacPulseDuration ) {
     digitalWrite(triacPin[3], LOW);
     triacNextFireTime[3] = triacNextFireTime[3]+linePeriod;
   }
