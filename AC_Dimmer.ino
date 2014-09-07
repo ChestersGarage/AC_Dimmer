@@ -23,7 +23,7 @@ const int testPin = 11;
 
 // Zero-cross detector
 const byte zeroCrossInt = 0;         // Interrupt used for the zero-cross input (int 0 = pin D2, int 1 = D3)
-const int lineFrequency = 488;       // The frequency of the mains line voltage in Hz
+const int lineFrequency = 122;       // The frequency of the mains line voltage in Hz
 // Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz; test mode is 488Hz
 volatile boolean zeroCross = false;  // Have we detected a zero-cross?
 unsigned long zeroCrossTime = 0;     // Timestamp in micros() of the latest zero-crossing interrupt
@@ -46,6 +46,9 @@ int triacPulseDuration = 20;          // The minimum duration of the triac pulse
 
 // Initialize things
 void setup() {
+  // Test mode
+  TCCR2B = TCCR2B & 0b11111000 | 0x06;  // Sets the PWM frequency on testPin to 122Hz
+  // End test mode
   // Attach the zero-cross interrupt (verify which 'mode' parameter works best with the zero-cross detector you use)
   attachInterrupt(zeroCrossInt, zeroCrossDetect, FALLING);
   pinMode(triacPin[0], OUTPUT);  // Set the Triac pin as output
