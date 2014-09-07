@@ -3,7 +3,6 @@ AC_Dimmer
 
 Draft sketch UNTESTED
 
-AC Light Control
 Mark Chester <mark@chestersgarage.com>
   
 Dims household lights and other resistive loads.
