@@ -17,7 +17,7 @@
 */
 
 // Zero-cross detector
-const byte zeroCrossInt = 0;         // Which interrupt is used for the zero-cross input (int 0 = pin D2, int 1 = D3)
+const byte zeroCrossInt = 0;         // Interrupt used for the zero-cross input (int 0 = pin D2, int 1 = D3)
 const int lineFrequency = 60;        // The frequency of the mains line voltage in Hz (Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz)
 volatile boolean zeroCross = false;  // Have we detected a zero-cross?
 unsigned long zeroCrossTime = 0;     // Timestamp in micros() of the latest zero-crossing interrupt
