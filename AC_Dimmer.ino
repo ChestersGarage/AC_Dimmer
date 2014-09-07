@@ -93,7 +93,7 @@ void checkZeroCross() {
     triacNextFireTime[1] = zeroCrossTime + map(dimmerKnob[1],0,1023,delayPeriod,long(linePeriod));
     triacNextFireTime[2] = zeroCrossTime + map(dimmerKnob[2],0,1023,delayPeriod,long(linePeriod));
     triacNextFireTime[3] = zeroCrossTime + map(dimmerKnob[3],0,1023,delayPeriod,long(linePeriod));
-    triacFired[0] = false;
+    triacFired[0] = false;  // Unset the flag so the triacs will fire
     triacFired[1] = false;
     triacFired[2] = false;
     triacFired[3] = false;
