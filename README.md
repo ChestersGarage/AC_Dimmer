@@ -1,7 +1,7 @@
 AC_Dimmer
 =========
 
-Draft sketch UNTESTED
+Tested with internal test mode. It's pretty good, but seems a little jumpy on my cheapo digital o-scope.
 
 Mark Chester <mark@chestersgarage.com>
   
@@ -18,4 +18,4 @@ BE CAREFUL!  Mains voltage CAN KILL YOU if anything goes wrong.
 Care and safe physical design are paramount to a successful installation.
 
 To-Do:
-* Build a 555 test harness to verify code does what I expect.
+* Run it against real hardware. I don't have any triacs or zero-crossing detectors. So I will have to build something and test before I can call this code done.
