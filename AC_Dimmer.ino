@@ -16,9 +16,20 @@
   Care and safe physical design are paramount to a successful installation.
 */
 
+// Comment out this line to disable TESTMODE
+#define TESTMODE
+#ifdef TESTMODE
+const int testPin = 11;
+#endif
+
 // Zero-cross detector
 const byte zeroCrossInt = 0;         // Interrupt used for the zero-cross input (int 0 = pin D2, int 1 = D3)
-const int lineFrequency = 60;        // The frequency of the mains line voltage in Hz (Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz)
+#ifdef TESTMODE
+const int lineFrequency = 30;       // The frequency of the mains line voltage in Hz
+#else
+const int lineFrequency = 60;        // The frequency of the mains line voltage in Hz
+#endif
+// Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz; TESTMODE is 122Hz
 volatile boolean zeroCross = false;  // Have we detected a zero-cross?
 unsigned long zeroCrossTime = 0;     // Timestamp in micros() of the latest zero-crossing interrupt
 const int delayPeriod = 200;         // On the ATMega 328p/16MHz, the soonest we can fire the triacs is about 250-300us after zero-cross
@@ -33,15 +44,23 @@ unsigned long dimmerKnobReadTime;            // When it's time to read the dimme
 // Triacs
 const byte triacPin[4] = {4,7,8,12};  // Digital IO pins used for the triac gates
 unsigned long triacNextFireTime[4];   // Timestamp in micros() when it's OK to fire the triacs again.
+boolean triacFired[4] = {0,0,0,0};    // Triac has been fired since the last zero-cross
 
 // Initialize things
 void setup() {
+#ifdef TESTMODE
+  TCCR2B = TCCR2B & 0b11111000 | 0x07;  // Sets a 122Hz PWM on pins 3 and 11
+#endif
   // Attach the zero-cross interrupt (verify which 'mode' parameter works best with the zero-cross detector you use)
   attachInterrupt(zeroCrossInt, zeroCrossDetect, FALLING);
   pinMode(triacPin[0], OUTPUT);  // Set the Triac pin as output
   pinMode(triacPin[1], OUTPUT);
   pinMode(triacPin[2], OUTPUT);
   pinMode(triacPin[3], OUTPUT);
+#ifdef TESTMODE
+  pinMode(testPin, OUTPUT);
+  analogWrite(testPin, 127);
+#endif
 }
 
 // Main Loop
@@ -84,22 +103,38 @@ void checkZeroCross() {
 
 // Fire each of the triacs at the right time.
 // When two or more dimmer knobs are near the same value,
-// they will content for timing and may be jumpy.
+// they will contend for timing and may be jumpy.
 void fireTriacs() {
-  if ( micros() >= triacNextFireTime[0] ) {  // Is it time to fire the triacs?
+  if ( !triacFired[0] && micros() >= triacNextFireTime[0] ) {  // Is it time to fire the triacs?
     digitalWrite(triacPin[0], HIGH);         // Fire the Triac to turn on flow of electricity
+    triacFired[0] = true;
   }
-  if ( micros() >= triacNextFireTime[1] ) {
+  if ( !triacFired[1] && micros() >= triacNextFireTime[1] ) {
     digitalWrite(triacPin[1], HIGH);
+    triacFired[1] = true;
   }
-  if ( micros() >= triacNextFireTime[2] ) {
+  if ( !triacFired[2] && micros() >= triacNextFireTime[2] ) {
     digitalWrite(triacPin[2], HIGH);
+    triacFired[2] = true;
   }
-  if ( micros() >= triacNextFireTime[3] ) {
+  if ( !triacFired[3] && micros() >= triacNextFireTime[3] ) {
     digitalWrite(triacPin[3], HIGH);
+    triacFired[3] = true;
   }
-  digitalWrite(triacPin[0], LOW);  // Turn off the triac gate (Triac will not actually turn off until ~next zero-cross)
-  digitalWrite(triacPin[1], LOW);
-  digitalWrite(triacPin[2], LOW);
-  digitalWrite(triacPin[3], LOW);
+  if ( triacFired[0] ) {
+    digitalWrite(triacPin[0], LOW);  // Turn off the triac gate (Triac will not actually turn off until ~next zero-cross)
+    triacNextFireTime[0] = triacNextFireTime[0]+linePeriod;
+  }
+  if ( triacFired[1] ) {
+    digitalWrite(triacPin[1], LOW);
+    triacNextFireTime[1] = triacNextFireTime[1]+linePeriod;
+  }
+  if ( triacFired[2] ) {
+    digitalWrite(triacPin[2], LOW);
+    triacNextFireTime[2] = triacNextFireTime[2]+linePeriod;
+  }
+  if ( triacFired[3] ) {
+    digitalWrite(triacPin[3], LOW);
+    triacNextFireTime[3] = triacNextFireTime[3]+linePeriod;
+  }
 }
