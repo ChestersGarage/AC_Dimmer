@@ -25,11 +25,11 @@ const int testPin = 11;
 // Zero-cross detector
 const byte zeroCrossInt = 0;         // Interrupt used for the zero-cross input (int 0 = pin D2, int 1 = D3)
 #ifdef TESTMODE
-const int lineFrequency = 122;       // The frequency of the mains line voltage in Hz
+const int lineFrequency = 488;       // The frequency of the mains line voltage in Hz
 #else
 const int lineFrequency = 60;        // The frequency of the mains line voltage in Hz
 #endif
-// Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz; TESTMODE is 122Hz
+// Usually either 60 Hz or 50 Hz, and very rarely ~400 Hz; TESTMODE is 488Hz
 volatile boolean zeroCross = false;  // Have we detected a zero-cross?
 unsigned long zeroCrossTime = 0;     // Timestamp in micros() of the latest zero-crossing interrupt
 const int delayPeriod = 200;         // On the ATMega 328p/16MHz, the soonest we can fire the triacs is about 250-300us after zero-cross
@@ -45,13 +45,10 @@ unsigned long dimmerKnobReadTime = 0;            // When it's time to read the d
 const byte triacPin[4] = {4,7,8,12};  // Digital IO pins used for the triac gates
 unsigned long triacNextFireTime[4];   // Timestamp in micros() when it's OK to fire the triacs again.
 boolean triacFired[4] = {0,0,0,0};    // Triac has been fired since the last zero-cross
-int triacPulseDuration = 100;          // How long the triac pulse should last in micros()
+int triacPulseDuration = 20;          // The minimum duration of the triac pulse in micros()
 
 // Initialize things
 void setup() {
-#ifdef TESTMODE
-  TCCR2B = TCCR2B & 0b11111000 | 0x06;  // Sets a 122Hz PWM on pins 3 and 11
-#endif
   // Attach the zero-cross interrupt (verify which 'mode' parameter works best with the zero-cross detector you use)
   attachInterrupt(zeroCrossInt, zeroCrossDetect, FALLING);
   pinMode(triacPin[0], OUTPUT);  // Set the Triac pin as output
